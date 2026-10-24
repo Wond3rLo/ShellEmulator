@@ -1,0 +1,4 @@
+
+vfs_path = "virtual_fs.csv"
+log_path = "shell_log.xml"
+script_path = "startup.txt"
