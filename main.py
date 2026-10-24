@@ -6,13 +6,14 @@ import tomllib
 import xml.etree.ElementTree as ET
 import getpass
 from pathlib import Path
-
+import csv
 
 class ShellEmulator:
     # Accept configuration and command-line parameters
     def __init__(self, root, config):
         self.root = root
         self.config = config
+        self.vfs = {}
 
         self.root.title(f"Shell Emulator - {Path(config['vfs_path']).name}")
         self.root.geometry("700x450")
@@ -25,7 +26,87 @@ class ShellEmulator:
         self.command_entry.bind("<Return>", self.run_command)
 
         # Run the startup script after the window opens
-        self.root.after(100, self.run_startup_script)
+        self.root.after(100, self.load_vfs)
+        self.root.after(200, self.run_startup_script)
+
+    def load_vfs(self):
+        vfs_path = Path(self.config["vfs_path"])
+
+        if not vfs_path.exists():
+            self.write_output(
+                f"VFS error: file not found: {vfs_path}\n"
+            )
+            self.vfs = {}
+            return
+
+        self.vfs = {}
+
+        try:
+            with vfs_path.open("r", encoding="utf-8", newline="") as file:
+                reader = csv.DictReader(file)
+
+                for row in reader:
+                    path = row["path"].strip("/")
+                    item_type = row["type"].strip()
+                    content = row["content"]
+
+                    self.vfs[path] = {
+                        "type": item_type,
+                        "content": content
+                    }
+
+            self.write_output(
+                f"VFS loaded: {len(self.vfs)} entries\n"
+            )
+
+        except (OSError, KeyError, csv.Error) as error:
+            self.vfs = {}
+            self.write_output(f"VFS error: {error}\n")
+
+    # Save the current VFS to a CSV file
+    def save_vfs(self, save_path):
+        save_path = Path(save_path)
+
+        try:
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with save_path.open(
+                "w", encoding="utf-8", newline=""
+            ) as file:
+                writer = csv.DictWriter(
+                    file,
+                    fieldnames=["path", "type", "content"]
+                )
+                writer.writeheader()
+
+                for path, item in self.vfs.items():
+                    writer.writerow({
+                        "path": "/" + path if path else "/",
+                        "type": item["type"],
+                        "content": item["content"]
+                    })
+
+            self.write_output(f"VFS saved to {save_path}\n")
+            return True
+
+        except OSError as error:
+            self.write_output(f"VFS save error: {error}\n")
+            return False
+
+    # Reset the VFS to its default empty state
+    def init_vfs(self):
+        self.vfs = {
+            "": {
+                "type": "dir",
+                "content": ""
+            }
+        }
+
+        if not self.save_vfs(self.config["vfs_path"]):
+            return False
+
+        self.write_output("VFS initialized\n")
+        return True
 
     # Process commands entered by the user
     def run_command(self, event=None):
@@ -60,6 +141,32 @@ class ShellEmulator:
                 self.write_output(
                     f"Command: ls\nArguments: {arguments}\n"
                 )
+
+            # Save the VFS to the specified CSV file
+            elif command == "vfs-save":
+                if len(arguments) != 1:
+                    error_message = "Usage: vfs-save <path>"
+                    self.write_output(f"Error: {error_message}\n")
+                    self.log_command(command, "ERROR", error_message)
+                    return False
+
+                success = self.save_vfs(arguments[0])
+                self.log_command(
+                    command,
+                    "OK" if success else "ERROR",
+                    "" if success else "Failed to save VFS"
+                )
+                return success
+
+            # Reset the VFS to its default state
+            elif command == "vfs-init":
+                success = self.init_vfs()
+                self.log_command(
+                    command,
+                    "OK" if success else "ERROR",
+                    "" if success else "Failed to initialize VFS"
+                )
+                return success
 
             elif command == "cd":
                 self.write_output(
