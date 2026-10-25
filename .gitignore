@@ -1,3 +1,4 @@
+# Python cache
 __pycache__/
 *.py[cod]
 
@@ -12,3 +13,12 @@ env/
 # OS-generated files
 .DS_Store
 Thumbs.db
+
+# Generated XML logs
+shell_log.xml
+test_log.xml
+
+# Generated test CSV files
+after_init.csv
+test_save.csv
+vfs_test_export.csv

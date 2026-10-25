@@ -1,0 +1,9 @@
+path,type,content
+/,dir,
+/Documents,dir,
+/Documents/Notes,dir,
+/Documents/Notes/Work,dir,
+/Documents/Notes/Work/plan.txt,file,Complete the project
+/Documents/Notes/ideas.txt,file,Game ideas
+/hello.txt,file,Hello world
+/readme.txt,file,Virtual filesystem test
