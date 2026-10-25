@@ -1,15 +1,12 @@
-ls
-ls -l
-ls Documents
-cd Documents
-ls
-cd Notes
-ls
-cd /
-echo Hello from the shell
-echo "Text with spaces"
-tac Documents/Notes/ideas.txt
+ls /
+ls /Documents/Notes/Work
+
+rm /hello.txt
+rm /readme.txt /Documents/Notes/ideas.txt /Documents/Notes/Work/plan.txt
 find /
-find / -name "*.txt"
-cd /Documents/Notes/Work
-cd missing_directory
+
+rmdir /Documents/Notes/Work
+ls /Documents/Notes
+
+# Error example: the script stops here if the file does not exist
+rm /missing.txt

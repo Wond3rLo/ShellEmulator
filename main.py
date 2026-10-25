@@ -1,4 +1,3 @@
-
 import tkinter as tk
 import shlex
 import argparse
@@ -7,8 +6,9 @@ import xml.etree.ElementTree as ET
 import getpass
 from pathlib import Path
 import csv
-import fnmatch  
-import posixpath 
+import fnmatch
+import posixpath
+
 
 class ShellEmulator:
     # Accept configuration and command-line parameters
@@ -16,17 +16,23 @@ class ShellEmulator:
         self.root = root
         self.config = config
         self.vfs = {}
-        self.current_dir = ""  # Current directory inside the VFS
-        self.previous_dir = ""  # Previous directory for cd -
+        self.current_dir = ""
+        self.previous_dir = ""
 
-        self.root.title(f"Shell Emulator - {Path(config['vfs_path']).name}")
+        self.root.title(
+            f"Shell Emulator - {Path(config['vfs_path']).name}"
+        )
         self.root.geometry("700x450")
 
         self.output = tk.Text(root, state="disabled")
-        self.output.pack(fill="both", expand=True, padx=10, pady=10)
+        self.output.pack(
+            fill="both", expand=True, padx=10, pady=10
+        )
 
         self.command_entry = tk.Entry(root)
-        self.command_entry.pack(fill="x", padx=10, pady=(0, 10))
+        self.command_entry.pack(
+            fill="x", padx=10, pady=(0, 10)
+        )
         self.command_entry.bind("<Return>", self.run_command)
 
         # Run the startup script after the window opens
@@ -46,7 +52,9 @@ class ShellEmulator:
         self.vfs = {}
 
         try:
-            with vfs_path.open("r", encoding="utf-8", newline="") as file:
+            with vfs_path.open(
+                "r", encoding="utf-8", newline=""
+            ) as file:
                 reader = csv.DictReader(file)
 
                 for row in reader:
@@ -60,7 +68,9 @@ class ShellEmulator:
                     }
 
             # Ensure the virtual root always exists
-            self.vfs.setdefault("", {"type": "dir", "content": ""})
+            self.vfs.setdefault(
+                "", {"type": "dir", "content": ""}
+            )
             self.current_dir = ""
             self.previous_dir = ""
 
@@ -77,7 +87,9 @@ class ShellEmulator:
         save_path = Path(save_path)
 
         try:
-            save_path.parent.mkdir(parents=True, exist_ok=True)
+            save_path.parent.mkdir(
+                parents=True, exist_ok=True
+            )
 
             with save_path.open(
                 "w", encoding="utf-8", newline=""
@@ -95,11 +107,15 @@ class ShellEmulator:
                         "content": item["content"]
                     })
 
-            self.write_output(f"VFS saved to {save_path}\n")
+            self.write_output(
+                f"VFS saved to {save_path}\n"
+            )
             return True
 
         except OSError as error:
-            self.write_output(f"VFS save error: {error}\n")
+            self.write_output(
+                f"VFS save error: {error}\n"
+            )
             return False
 
     # Reset the VFS to its default empty state
@@ -110,8 +126,8 @@ class ShellEmulator:
                 "content": ""
             }
         }
-        self.current_dir = ""  # Return to the VFS root
-        self.previous_dir = ""  # Reset previous directory
+        self.current_dir = ""
+        self.previous_dir = ""
 
         if not self.save_vfs(self.config["vfs_path"]):
             return False
@@ -136,7 +152,9 @@ class ShellEmulator:
         elif not path.startswith("/"):
             path = posixpath.join(self.current_dir, path)
 
-        normalized = posixpath.normpath("/" + path).strip("/")
+        normalized = posixpath.normpath(
+            "/" + path
+        ).strip("/")
         return normalized
 
     # Check whether a path exists and points to a directory
@@ -157,31 +175,53 @@ class ShellEmulator:
             if remainder and "/" not in remainder:
                 children.append((remainder, path, item))
 
-        return sorted(children, key=lambda child: (child[2]["type"] != "dir", child[0].lower()))
+        return sorted(
+            children,
+            key=lambda child: (
+                child[2]["type"] != "dir",
+                child[0].lower()
+            )
+        )
 
     # Implement ls using only the virtual filesystem
     def command_ls(self, arguments):
         show_all = "-a" in arguments
         long_format = "-l" in arguments
-        paths = [arg for arg in arguments if not arg.startswith("-")]
+        paths = [
+            arg for arg in arguments
+            if not arg.startswith("-")
+        ]
 
         if len(paths) > 1:
             raise ValueError("Usage: ls [-a] [-l] [path]")
 
-        target = self.resolve_path(paths[0] if paths else "")
+        target = self.resolve_path(
+            paths[0] if paths else ""
+        )
         item = self.vfs.get(target)
 
         if item is None:
-            raise ValueError(f"ls: cannot access '{paths[0] if paths else target}': no such file or directory")
+            requested = paths[0] if paths else target
+            raise ValueError(
+                f"ls: cannot access '{requested}': "
+                "no such file or directory"
+            )
 
         if item["type"] == "file":
             self.write_output(target + "\n")
             return
 
         children = self.get_children(target)
+
         if show_all:
-            children = [(".", target, {"type": "dir", "content": ""}),
-                        ("..", posixpath.dirname(target), {"type": "dir", "content": ""})] + children
+            children = [
+                (".", target, {
+                    "type": "dir", "content": ""
+                }),
+                ("..", posixpath.dirname(target), {
+                    "type": "dir", "content": ""
+                })
+            ] + children
 
         if not children:
             self.write_output("(empty directory)\n")
@@ -189,9 +229,15 @@ class ShellEmulator:
 
         for name, child_path, child_item in children:
             if long_format:
-                self.write_output(f"{child_item['type']:4} {child_path or '/'}\n")
+                self.write_output(
+                    f"{child_item['type']:4} "
+                    f"{child_path or '/'}\n"
+                )
             else:
-                suffix = "/" if child_item["type"] == "dir" and name not in (".", "..") else ""
+                suffix = (
+                    "/" if child_item["type"] == "dir"
+                    and name not in (".", "..") else ""
+                )
                 self.write_output(f"{name}{suffix}\n")
 
     # Implement cd using virtual paths
@@ -203,16 +249,19 @@ class ShellEmulator:
         target = self.resolve_path(target_arg)
 
         if not self.is_directory(target):
-            raise ValueError(f"cd: '{target_arg}': no such directory")
+            raise ValueError(
+                f"cd: '{target_arg}': no such directory"
+            )
 
         self.previous_dir = self.current_dir
         self.current_dir = target
-        self.write_output(f"Current directory: /{self.current_dir}\n")
+        self.write_output(
+            f"Current directory: /{self.current_dir}\n"
+        )
 
     # Implement echo
     def command_echo(self, arguments):
         self.write_output(" ".join(arguments) + "\n")
-        return True
 
     # Print file lines in reverse order
     def command_tac(self, arguments):
@@ -224,10 +273,15 @@ class ShellEmulator:
             item = self.vfs.get(target)
 
             if item is None or item["type"] != "file":
-                raise ValueError(f"tac: '{file_path}': no such file")
+                raise ValueError(
+                    f"tac: '{file_path}': no such file"
+                )
 
             lines = item["content"].splitlines()
-            self.write_output("\n".join(reversed(lines)) + ("\n" if lines else ""))
+            self.write_output(
+                "\n".join(reversed(lines))
+                + ("\n" if lines else "")
+            )
 
     # Search VFS entries by path and optional file-name pattern
     def command_find(self, arguments):
@@ -240,32 +294,129 @@ class ShellEmulator:
         elif len(arguments) == 2 and arguments[0] == "-name":
             start_path = self.current_dir
             pattern = arguments[1]
-        elif len(arguments) == 3 and arguments[1] == "-name":
+        elif (
+            len(arguments) == 3
+            and arguments[1] == "-name"
+        ):
             start_path = self.resolve_path(arguments[0])
             pattern = arguments[2]
         else:
-            raise ValueError("Usage: find [path] [-name pattern]")
+            raise ValueError(
+                "Usage: find [path] [-name pattern]"
+            )
 
         if start_path not in self.vfs:
-            raise ValueError(f"find: '{start_path}': no such path")
+            raise ValueError(
+                f"find: '{start_path}': no such path"
+            )
+
         if self.vfs[start_path]["type"] != "dir":
-            raise ValueError(f"find: '{start_path}' is not a directory")
+            raise ValueError(
+                f"find: '{start_path}' is not a directory"
+            )
 
         prefix = start_path + "/" if start_path else ""
         matches = []
+
         for path in sorted(self.vfs):
             if path == start_path:
                 continue
+
             if start_path and not path.startswith(prefix):
                 continue
+
             name = path.rsplit("/", 1)[-1]
             if fnmatch.fnmatch(name, pattern):
-                matches.append("/" + path)
+                matches.append(path)
 
-        if matches:
-            self.write_output("\n".join(matches) + "\n")
+        if not matches:
+            self.write_output("No matches found\n")
         else:
-            self.write_output("No matches found.\n")
+            for path in matches:
+                self.write_output("/" + path + "\n")
+                    # Remove files from the in-memory virtual filesystem.
+
+    def command_rm(self, arguments):
+        if not arguments:
+            raise ValueError("Usage: rm <file> [file ...]")
+
+        targets = []
+
+        for user_path in arguments:
+            target = self.resolve_path(user_path)
+            item = self.vfs.get(target)
+
+            if item is None:
+                raise ValueError(
+                    f"rm: cannot remove '{user_path}': "
+                    "no such file or directory"
+                )
+
+            if item["type"] == "dir":
+                raise ValueError(
+                    f"rm: cannot remove '{user_path}': "
+                    "is a directory; use rmdir"
+                )
+
+            targets.append((user_path, target))
+
+        # Validate all arguments before changing the VFS.
+        for user_path, target in targets:
+            del self.vfs[target]
+            self.write_output(f"Removed file /{target}\n")
+
+    # Remove an empty directory from the in-memory virtual filesystem.
+    def command_rmdir(self, arguments):
+        if not arguments:
+            raise ValueError(
+                "Usage: rmdir <directory> [directory ...]"
+            )
+
+        targets = []
+
+        for user_path in arguments:
+            target = self.resolve_path(user_path)
+
+            if target == "":
+                raise ValueError(
+                    "rmdir: cannot remove the virtual root directory"
+                )
+
+            item = self.vfs.get(target)
+
+            if item is None:
+                raise ValueError(
+                    f"rmdir: failed to remove '{user_path}': "
+                    "no such directory"
+                )
+
+            if item["type"] != "dir":
+                raise ValueError(
+                    f"rmdir: failed to remove '{user_path}': "
+                    "not a directory"
+                )
+
+            if (
+                target == self.current_dir
+                or self.current_dir.startswith(target + "/")
+            ):
+                raise ValueError(
+                    f"rmdir: failed to remove '{user_path}': "
+                    "directory is in use"
+                )
+
+            if self.get_children(target):
+                raise ValueError(
+                    f"rmdir: failed to remove '{user_path}': "
+                    "directory not empty"
+                )
+
+            targets.append((user_path, target))
+
+        # Validate all arguments before changing the VFS.
+        for user_path, target in targets:
+            del self.vfs[target]
+            self.write_output(f"Removed directory /{target}\n")
 
     # Execute a command and return whether it succeeded
     def execute_command(self, command_text):
@@ -276,7 +427,9 @@ class ShellEmulator:
             parts = shlex.split(command_text)
         except ValueError as error:
             self.write_output(f"Error: {error}\n")
-            self.log_command(command_text, "ERROR", str(error))
+            self.log_command(
+                command_text, "ERROR", str(error)
+            )
             return False
 
         command = parts[0]
@@ -288,30 +441,41 @@ class ShellEmulator:
                 self.root.destroy()
                 return True
 
-            elif command == "ls":  # UPDATED
-                self.command_ls(arguments)  # NEW
+            elif command == "ls":
+                self.command_ls(arguments)
 
-            elif command == "cd":  # UPDATED
-                self.command_cd(arguments)  # NEW
+            elif command == "cd":
+                self.command_cd(arguments)
 
-            elif command == "echo":  # NEW
+            elif command == "echo":
                 self.command_echo(arguments)
 
-            elif command == "tac":  # NEW
+            elif command == "tac":
                 self.command_tac(arguments)
 
-            elif command == "find":  # NEW
+            elif command == "find":
                 self.command_find(arguments)
+
+            elif command == "rm":
+                self.command_rm(arguments)
+
+            elif command == "rmdir":
+                self.command_rmdir(arguments)
 
             # Save the VFS to the specified CSV file
             elif command == "vfs-save":
                 if len(arguments) != 1:
                     error_message = "Usage: vfs-save <path>"
-                    self.write_output(f"Error: {error_message}\n")
-                    self.log_command(command, "ERROR", error_message)
+                    self.write_output(
+                        f"Error: {error_message}\n"
+                    )
+                    self.log_command(
+                        command, "ERROR", error_message
+                    )
                     return False
 
                 success = self.save_vfs(arguments[0])
+
                 self.log_command(
                     command,
                     "OK" if success else "ERROR",
@@ -322,6 +486,7 @@ class ShellEmulator:
             # Reset the VFS to its default state
             elif command == "vfs-init":
                 success = self.init_vfs()
+
                 self.log_command(
                     command,
                     "OK" if success else "ERROR",
@@ -331,8 +496,12 @@ class ShellEmulator:
 
             else:
                 error_message = f"Unknown command '{command}'"
-                self.write_output(f"Error: {error_message}\n")
-                self.log_command(command, "ERROR", error_message)
+                self.write_output(
+                    f"Error: {error_message}\n"
+                )
+                self.log_command(
+                    command, "ERROR", error_message
+                )
                 return False
 
             self.log_command(command, "OK", "")
@@ -340,10 +509,11 @@ class ShellEmulator:
 
         except Exception as error:
             self.write_output(f"Error: {error}\n")
-            self.log_command(command, "ERROR", str(error))
+            self.log_command(
+                command, "ERROR", str(error)
+            )
             return False
-
-    # Write command events to an XML log file
+            # Write command events to an XML log file
     def log_command(self, command, status, message):
         log_path = Path(self.config["log_path"])
 
@@ -371,7 +541,11 @@ class ShellEmulator:
 
         # Save the updated XML file
         ET.indent(tree, space="    ")
-        tree.write(log_path, encoding="utf-8", xml_declaration=True)
+        tree.write(
+            log_path,
+            encoding="utf-8",
+            xml_declaration=True
+        )
 
     # Execute commands from the startup script
     def run_startup_script(self):
@@ -379,17 +553,25 @@ class ShellEmulator:
 
         if not script_path.exists():
             self.write_output(
-                f"Startup script error: file not found: {script_path}\n"
+                f"Startup script error: file not found: "
+                f"{script_path}\n"
             )
             return
 
         try:
-            with script_path.open("r", encoding="utf-8") as script:
-                for line_number, line in enumerate(script, start=1):
+            with script_path.open(
+                "r", encoding="utf-8"
+            ) as script:
+                for line_number, line in enumerate(
+                    script, start=1
+                ):
                     command_text = line.strip()
 
-                    # Skip empty lines
-                    if not command_text:
+                    # Skip empty lines and comments
+                    if (
+                        not command_text
+                        or command_text.startswith("#")
+                    ):
                         continue
 
                     # Display the command as if entered by the user
@@ -404,7 +586,9 @@ class ShellEmulator:
                         return
 
         except OSError as error:
-            self.write_output(f"Startup script error: {error}\n")
+            self.write_output(
+                f"Startup script error: {error}\n"
+            )
 
     # Add text to the output area
     def write_output(self, text):
@@ -420,9 +604,18 @@ def parse_arguments():
         description="Shell emulator configuration"
     )
 
-    parser.add_argument("--vfs", help="Path to the VFS file")
-    parser.add_argument("--log", help="Path to the XML log file")
-    parser.add_argument("--script", help="Path to the startup script")
+    parser.add_argument(
+        "--vfs",
+        help="Path to the VFS file"
+    )
+    parser.add_argument(
+        "--log",
+        help="Path to the XML log file"
+    )
+    parser.add_argument(
+        "--script",
+        help="Path to the startup script"
+    )
     parser.add_argument(
         "--config",
         default="config.toml",
