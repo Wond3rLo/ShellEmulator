@@ -1,4 +1,15 @@
 ls
-cd "My Folder"
-unknown_command
+ls -l
+ls Documents
+cd Documents
 ls
+cd Notes
+ls
+cd /
+echo Hello from the shell
+echo "Text with spaces"
+tac Documents/Notes/ideas.txt
+find /
+find / -name "*.txt"
+cd /Documents/Notes/Work
+cd missing_directory
